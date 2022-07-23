@@ -1,0 +1,439 @@
+use arti_feed;
+
+set foreign_key_checks = 0;
+#drop table article_;
+#drop table category_;
+#drop table image_;
+#drop table like_;
+#drop table user_;
+#drop table view_;
+
+
+create table user_(
+user_id varchar(100),
+user_email varchar(100),
+user_password varchar(100),
+user_first_name varchar(100),
+user_last_name varchar(100),
+user_username varchar(50),
+user_description varchar(250),
+user_imgurl varchar(200),
+primary key(user_id,user_username)
+); 
+
+create table category_(
+category_id varchar(100) primary key,
+category_name varchar(100)
+);
+
+create table article_(
+article_id varchar(100) primary key,
+article_title varchar(100),
+#article_category
+article_category_id varchar(100),
+foreign key (article_category_id) references category_(category_id),
+
+article_featured_image varchar(100),
+article_author_id varchar(100),
+foreign key (article_author_id) references user_(user_id),
+article_content varchar(100),
+article_description varchar(100),
+article_permalink varchar(100),
+article_date date
+);
+
+create table image_(
+image_id varchar(200) primary key,
+image_user_id varchar(100),
+foreign key (image_user_id) references user_(user_id),
+image_url varchar(250)
+);
+
+create table like_(
+like_article_id varchar(100),
+like_user_id varchar(200),
+primary key(like_article_id,like_user_id),
+foreign key (like_article_id) references article_(article_id),
+foreign key (like_user_id) references user_(user_id)
+);
+
+create table view_(
+view_article_id varchar(100),
+foreign key (view_article_id) references article_(article_id),
+view_date date,
+article_count int,
+primary key(view_article_id,view_date)
+);
+
+
+show tables;
+
+
+insert into user_ values ('u1','shi@gmail.com','ach1232','Shirshak','Acharya','sh_ach','Hello I am shirshak acharya','myimgurl');
+insert into user_ values ('u2','shi@gmail.com','ach1232','Shirshak','Acharya','ajaja','Hello I am shirshak acharya','myimgurl');
+insert into user_ values ('u3','shi@gmail.com','ach1232','Shirshak','Acharya','sdde','Hello I am shirshak acharya','myimgurl');
+insert into user_ values ('u4','shi@gmail.com','ach1232','Shirshak','Acharya','4r4r','Hello I am shirshak acharya','myimgurl');
+insert into user_ values ('u5','shi@gmail.com','ach1232','Shirshak','Acharya','445','Hello I am shirshak acharya','myimgurl');
+insert into user_ values ('u6','shi@gmail.com','ach1232','Shirshak','Acharya','dfmdmfdm','Hello I am shirshak acharya','myimgurl');
+
+insert into category_ values ('c1','tech');
+insert into category_ values ('c2','tech');
+insert into category_ values ('c3','tech');
+insert into category_ values ('c4','tech');
+insert into category_ values ('c5','science');
+
+
+insert into article_ values ('a1','Article Title','c2','article featured image', 'u3','article content','article description', 'article permalink','1993-12-09');
+insert into article_ values ('a2','Rororo','c1','article featured image', 'u3','article content','article description', 'article permalink','1994-12-09');
+insert into article_ values ('a3','Hello From the other side','c4','article featured image', 'u3','article content','article description', 'article permalink','1995-12-09');
+insert into article_ values ('a4','Hello From the other side','c5','article featured image', 'u4','article content','article description', 'article permalink','1996-12-09');
+insert into article_ values ('a5','Article Title','c2','article featured image', 'u1','article content','article description', 'article permalink','1997-12-09');
+insert into article_ values ('a6','Article Title','c4','article featured image', 'u2','article content','article description', 'article permalink','1998-12-09');
+
+
+insert into image_ values ('image 1','u1','imageur1');
+insert into image_ values ('image 2','u2','imageur1');
+insert into image_ values ('image 3','u3','imageur1');
+insert into image_ values ('image 4','u4','imageur1');
+insert into image_ values ('image 5','u5','imageur1');
+
+
+insert into like_ values ('a1','u1');
+insert into like_ values ('a2','u1');
+insert into like_ values ('a3','u4');
+insert into like_ values ('a5','u5');
+insert into like_ values ('a1','u2');
+insert into like_ values ('a1','u3');
+insert into like_ values ('a1','u4');
+
+
+insert into view_ values ('a1','1997-04-30','89');
+insert into view_ values ('a2','1997-04-30','9');
+insert into view_ values ('a3','1997-04-30','664');
+insert into view_ values ('a4','1997-04-30','878');
+insert into view_ values ('a5','1997-04-30','32');
+insert into view_ values ('a6','1997-04-30','65');
+
+
+select * from like_;
+
+select * from image_;
+
+select * from category_;
+
+select * from article_;
+
+select * from user_;
+
+select * from view_;
+
+
+
+# ADD NEW ARTICLE 
+delimiter |
+create procedure add_article(in article_id varchar(50),in article_title varchar(100),in article_category_id varchar(50),
+in article_description varchar(200),in article_content varchar(500),in article_featured_image varchar(500),in article_permalink varchar(100),
+in article_date varchar(50),in article_author_id varchar(100))
+begin
+insert into article_ values(article_id,article_title,
+article_category_id,article_featured_image,article_author_id,
+article_content,article_description,article_permalink,article_date);
+end;
+|
+
+drop procedure add_article;
+call add_article('a11','This is new Article',
+'c4',' thi si my article description',
+'this is my loooooong article content',
+'this is my article featured image big ',
+'this is my article permalink','2022-07-23','u3');
+
+#----------------------------------------- end of add article ---------------------------------------------------
+
+
+# DELETE ARTICLE 
+delimiter |
+create procedure delete_article(in article_id varchar(50))
+begin 
+delete from article_ a where a.article_id = article_id;
+end;
+|
+call delete_article('a11');
+select * from article_;
+
+
+#----------------------------------- end of delete article 
+
+
+
+
+# MY ARTICLE PAGE UPDATE
+
+# show all article from a particular user when no search button is pressed
+# according to date added ascending 
+(select a.article_title,a.article_id, a.article_featured_image,a.article_date,count(l.like_user_id) as likes,c.category_name,v.article_count
+from article_ a inner join category_ c
+on c.category_id = a.article_category_id
+inner join like_ l on l.like_article_id = a.article_id
+inner join view_ v on v.view_article_id = a.article_id
+group by l.like_article_id
+)order by a.article_date asc;
+# according to date added descending
+(select a.article_title,a.article_id, a.article_featured_image,a.article_date,count(l.like_user_id) as likes,c.category_name,v.article_count
+from article_ a inner join category_ c
+on c.category_id = a.article_category_id
+inner join like_ l on l.like_article_id = a.article_id
+inner join view_ v on v.view_article_id = a.article_id
+group by l.like_article_id
+)order by a.article_date desc;
+# according to view count ascneding
+(select a.article_title,a.article_id, a.article_featured_image,a.article_date,count(l.like_user_id) as likes,c.category_name,v.article_count
+from article_ a inner join category_ c
+on c.category_id = a.article_category_id
+inner join like_ l on l.like_article_id = a.article_id
+inner join view_ v on v.view_article_id = a.article_id
+group by l.like_article_id
+)order by v.article_count asc;
+# according to view count descending
+(select a.article_title,a.article_id, a.article_featured_image,a.article_date,count(l.like_article_id) as likes,c.category_name,v.article_count
+from article_ a inner join category_ c
+on c.category_id = a.article_category_id
+inner join like_ l on l.like_article_id = a.article_id
+inner join view_ v on v.view_article_id = a.article_id
+group by l.like_article_id
+)order by v.article_count desc;
+
+
+
+
+
+# like is according to user id so even the articles which have 0 like are shown
+delimiter |
+create procedure show_articles_after_search_is_applied(in title varchar(50))
+begin 
+select a.article_title,a.article_id, a.article_featured_image,a.article_date,count(l.like_user_id) as likes,c.category_name,v.article_count
+from article_ a  inner join category_ c
+on c.category_id = a.article_category_id
+inner join like_ l on l.like_user_id = a.article_author_id
+inner join view_ v on v.view_article_id = a.article_id
+where a.article_title like title
+group by l.like_article_id
+order by v.article_count desc;
+end
+|
+select * from like_;
+call show_articles_after_search_is_applied('Hello From the other side');
+drop procedure show_articles_after_search_is_applied;
+#------------------------------------------------------------ end of my article page ---------------------------------------
+
+# MY PROFILE PAGE UPDATE
+
+delimiter |
+create procedure my_profile_update(in user_id varchar(50),in first_name varchar(50),in last_name varchar(50),in description_ varchar(200),in email_ varchar(100),in username_ varchar(50),in img_url varchar(200))
+begin
+update user_ u
+SET u.user_first_name = first_name,
+ u.user_last_name = last_name,
+ u.user_description = description_,
+ u.user_email = email_,
+ u.user_username = username_,
+ u.user_imgurl = img_url
+ where u.user_id = user_id; 
+ end;
+ |
+ call my_profile_update('u1','Shahaha','achahahcah',' i am a computer progrmammer','shishisaihsai@gmail.com','this is my useueusuname','img url imr url img url img url ');
+
+#------------------------------------------------------------ end of my profile page update ---------------------------------------
+
+# ARTICLE POST 
+
+# to get information about article 
+delimiter |
+create procedure article_post_information(in article_id varchar(50))
+begin
+select a.article_title,u.user_imgurl,u.user_first_name,u.user_last_name,a.article_content,c.category_name, a.article_featured_image,a.article_date,v.article_count as article_view_count,count(l.like_user_id) as likes
+from article_ a inner join category_ c
+on c.category_id = a.article_category_id
+inner join user_ u on u.user_id=a.article_author_id
+inner join view_ v on v.view_article_id=a.article_id
+inner join like_ l on l.like_article_id = a.article_id
+where a.article_id=article_id;
+end;
+|
+drop procedure article_post_information;
+call article_post_information('a1')
+
+# to get more article from author and display top most liked articles
+delimiter |
+create procedure article_post_more_author_article(in user_id varchar(50))
+begin
+select  a.article_title,a.article_featured_image, count(l.like_user_id) as likes from article_ a inner join user_ u on u.user_id=a.article_author_id
+inner join like_ l on l.like_user_id = a.article_author_id
+where u.use2r_id =user_id
+group by l.like_article_id 
+# group by ma desc launa mildaina so order by pani use gareko and group by use nagareraah order by use vayo vane sabai like count hunxa but hamlai xuttai article ko xuttai like cahinxa so
+order by l.like_article_id limit 5;
+end;
+|
+call article_post_more_author_article('u3');
+
+# to get recommend any random top article from that genre and display top most liked articles from that genre
+delimiter |
+create procedure more_similar_articles()
+begin
+select  a.article_title,a.article_featured_image, count(l.like_user_id) as likes, a.article_date,a.article_description,u.user_first_name,u.user_last_name,u.user_imgurl,c.category_name
+from article_ a inner join user_ u on u.user_id=a.article_author_id
+inner join category_ c on c.category_id = a.article_category_id
+inner join like_ l on l.like_user_id = a.article_author_id
+group by l.like_article_id 
+# group by ma desc launa mildaina so order by pani use gareko and group by use nagareraah order by use vayo vane sabai like count hunxa but hamlai xuttai article ko xuttai like cahinxa so
+order by l.like_article_id limit 10;
+end;
+|
+call more_similar_articles();
+
+#-------------------------------------end of article post -----------------------------------------------------------
+
+
+
+
+# EDIT ARTICLE 
+delimiter |
+create procedure edit_article(in article_id varchar(50),in article_title varchar(100),in article_category_id varchar(50),
+in article_description_ varchar(200),in article_content varchar(500),in article_featured_image varchar(500),in article_permalink varchar(100))
+begin
+update article_ a
+SET a.article_title = article_title,
+ a.article_category_id = article_category_id,
+ a.article_description = article_description_,
+ a.article_content = article_content,
+ a.article_featured_image = article_featured_image,
+ a.article_permalink = article_permalink
+ where a.article_id = article_id; 
+ end;
+ |
+ call edit_article('a5','This is new Article','c4',' thi si my article description','this is my loooooong article content','this is my article featured image big ','this is my article permalink');
+
+#-------------------------------------end of edit article  -----------------------------------------------------------
+
+
+
+# SEARCH RESULT
+
+#date added  ascending
+delimiter |
+create procedure search_results_date_added_ascending(in title varchar(50))
+begin
+(select a.article_title,u.user_imgurl,u.user_first_name,u.user_last_name,a.article_description,c.category_name, a.article_featured_image,a.article_date
+from article_ a inner join category_ c
+on c.category_id = a.article_category_id
+inner join user_ u on u.user_id = a.article_author_id
+where a.article_title = title
+)order by a.article_date asc;
+end;
+|
+call search_results_date_added_ascending('Hello From the other side');
+
+#date added  descending
+delimiter |
+create procedure search_results_date_added_descending(in title varchar(50))
+begin
+(select a.article_title,u.user_imgurl,u.user_first_name,u.user_last_name,a.article_description,c.category_name, a.article_featured_image,a.article_date
+from article_ a inner join category_ c
+on c.category_id = a.article_category_id
+inner join user_ u on u.user_id = a.article_author_id
+where a.article_title = title
+)order by a.article_date desc;
+end;
+|
+call search_results_date_added_descending('Hello From the other side');
+
+#view count  ascending
+delimiter |
+create procedure search_results_view_count_ascending(in title varchar(50))
+begin
+(select a.article_title,u.user_imgurl,u.user_first_name,u.user_last_name,a.article_description,c.category_name, a.article_featured_image,a.article_date,v.article_count
+from article_ a inner join category_ c
+on c.category_id = a.article_category_id
+inner join user_ u on u.user_id = a.article_author_id
+inner join view_ v on v.view_article_id = a.article_id
+where a.article_title = title
+)order by v.article_count asc;
+end;
+|
+call search_results_view_count_ascending('Hello From the other side');
+
+#view cout  descending
+delimiter |
+create procedure search_results_view_count_descending(in title varchar(50))
+begin
+(select a.article_title,u.user_imgurl,u.user_first_name,u.user_last_name,a.article_description,c.category_name, a.article_featured_image,a.article_date,v.article_count
+from article_ a inner join category_ c
+on c.category_id = a.article_category_id
+inner join user_ u on u.user_id = a.article_author_id
+inner join view_ v on v.view_article_id = a.article_id
+where a.article_title = title
+)order by v.article_count desc;
+end;
+|
+call search_results_view_count_descending('Hello From the other side');
+
+
+#-------------------------------------end of search result-----------------------------------------------------------
+
+
+# Trending article 
+# when no genre is preferred i.e. all article is preferred
+delimiter |
+create procedure trending_page_when_category_name_not_given()
+begin
+select a.article_title,a.article_description,a.article_featured_image,a.article_date,c.category_name,v.article_count,u.user_imgurl,u.user_first_name,u.user_last_name
+from article_ a inner join category_ c on c.category_id = a.article_category_id
+inner join user_ u on u.user_id = a.article_author_id
+inner join view_ v on v.view_article_id = a.article_id
+order by v.article_count desc limit 10;
+end;
+|
+call trending_page_when_category_name_not_given();
+
+# when genre is preferred i.e. only some article is preferred
+delimiter |
+create procedure trending_page_category_given(in category_name varchar(100))
+begin
+(select a.article_title,a.article_description,a.article_featured_image,a.article_date,c.category_name,v.article_count,u.user_imgurl,u.user_first_name,u.user_last_name
+from article_ a inner join category_ c on c.category_id = a.article_category_id
+inner join user_ u on u.user_id = a.article_author_id
+inner join view_ v on v.view_article_id = a.article_id
+where c.category_name = category_name
+)order by v.article_count desc;
+end
+|
+
+call trending_page_category_given('tech');
+
+# for popular post
+
+delimiter |
+create procedure trending_page_popular_post()
+begin
+(select a.article_title,a.article_description,a.article_featured_image,a.article_date,c.category_name,v.article_count,u.user_imgurl,u.user_first_name,u.user_last_name,count(l.like_article_id)
+from article_ a inner join category_ c on c.category_id = a.article_category_id
+inner join user_ u on u.user_id = a.article_author_id
+inner join like_ l on l.like_user_id = a.article_author_id
+inner join view_ v on v.view_article_id = a.article_id
+group by l.like_article_id 
+)order by l.like_article_id limit 10;
+end
+|
+select * from like_;
+drop procedure trending_page_popular_post;
+call trending_page_popular_post();
+
+
+
+#-------------------------------------------- end of trending article ---------------------------------------------------------------
+
+
+
+
+
